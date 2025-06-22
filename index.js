@@ -12,7 +12,10 @@ const PORT = process.env.PORT || 8000
 const adminRoute = require("./Route/adminRoute")
 
 
-app.use(cors());
+app.use(cors({
+    origin: ["https://git-front-beige.vercel.app/"], // your Vercel frontend
+    credentials: true
+  }));
 
 
 
