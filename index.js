@@ -1,52 +1,50 @@
-const express = require("express")
+const express = require("express");
 const app = express();
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const UserRoute = require("./Route/userRoute")
-require("dotenv").config()
+const bodyParser = require("body-parser");
+require("dotenv").config();
 
-const PORT = process.env.PORT || 8000
-// const mongoose = require("mongoose")
- const Dbcon = require("./config/dbconn")
+const adminRoute = require("./Route/adminRoute");
+const userRoute = require("./Route/userRoute");
+const Dbcon = require("./config/dbconn");
 
-const adminRoute = require("./Route/adminRoute")
+const PORT = process.env.PORT || 8000;
 
+const allowedOrigins = [
+  // "http://localhost:5173",
+  "https://git-front-beige.vercel.app"
+];
 
-app.use(cors({
-    origin: ["https://git-front-beige.vercel.app/"], // your Vercel frontend
-    credentials: true
-  }));
+// ✅ Manual CORS headers (MUST BE FIRST before any routes)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
 
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
 
+  next();
+});
 
-
-
-// Parse incoming requests with JSON payloads
 app.use(bodyParser.json());
-
-// Parse incoming requests with urlencoded payloads
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Health Check
+app.get("/", (req, res) => res.send("✅ Backend running"));
+
 Dbcon();
 
-app.use("/admin",adminRoute)
-app.use("/user",UserRoute)
+// Routes
+app.use("/admin", adminRoute);
+app.use("/user", userRoute);
 
-app.listen(PORT,()=>{
-    console.log(`Server Running on port ${PORT}`)
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
