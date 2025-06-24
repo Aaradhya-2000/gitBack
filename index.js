@@ -10,7 +10,7 @@ const Dbcon = require("./config/dbconn");
 const PORT = process.env.PORT || 8000;
 
 const allowedOrigins = [
-  // "http://localhost:5173",
+  "http://localhost:5173",
   "https://git-front-beige.vercel.app"
 ];
 
@@ -36,7 +36,10 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Health Check
-app.get("/", (req, res) => res.send("✅ Backend running"));
+app.get("/", (req, res) => {
+  res.send("✅ Backend is running");
+});
+
 
 Dbcon();
 

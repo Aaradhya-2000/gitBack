@@ -5,7 +5,7 @@ const taskModal = require("../modal/taskModal");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 
-// ✅ Admin Login (fixed)
+// ✅ Admin Login (with bcrypt)
 const login = async (req, res) => {
   const { adminId, password } = req.body;
 
@@ -13,27 +13,32 @@ const login = async (req, res) => {
     const Admin = await adminModel.findOne({ id: adminId });
 
     if (!Admin) {
-      return res.status(401).send({ msg: "Invalid user ID" });
+      console.log("❌ Admin not found");
+      return res.status(401).send({ msg: "❌ Invalid Admin ID" });
     }
 
-    // If passwords are hashed (recommended), use bcrypt:
+    // Debug logs (Remove in production)
+    console.log("🔐 Entered Password:", password);
+    console.log("🔐 Stored Hashed Password:", Admin.password);
+
     const isMatch = await bcrypt.compare(password, Admin.password);
     if (!isMatch) {
-      return res.status(401).send({ msg: "Invalid Password" });
+      console.log("❌ Password mismatch");
+      return res.status(401).send({ msg: "❌ Invalid Password" });
     }
 
-    return res.status(200).send({ admin: Admin, msg: "Login Successfully" });
+    return res.status(200).send({ admin: Admin, msg: "✅ Login Successful" });
 
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({ msg: "Server error" });
+    console.error("Login error:", error);
+    return res.status(500).send({ msg: "🚨 Server Error" });
   }
 };
 
-// ✅ Register New User
+// ✅ User Registration
 const userRegister = async (req, res) => {
   const { name, email, designation } = req.body;
-  const plainPassword = userPass();
+  const plainPassword = userPass(); // Generate random password
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
   try {
@@ -44,35 +49,34 @@ const userRegister = async (req, res) => {
       password: hashedPassword,
     });
 
-    // Email credentials
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: "aaradhyaprnjp62@gmail.com",
-        pass: "jxct uxty ckmu kkwv",
+        pass: "jxct uxty ckmu kkwv", // App password
       },
     });
 
     const mailOptions = {
       from: "aaradhyaprnjp62@gmail.com",
       to: email,
-      subject: "Your Credentials",
-      text: `Welcome ${name}!\n\nYour Password: ${plainPassword}\nDesignation: ${designation}`,
+      subject: "Your Task Management Credentials",
+      text: `👋 Hello ${name},\n\nYour credentials:\nEmail: ${email}\nPassword: ${plainPassword}\nDesignation: ${designation}`,
     };
 
-    transporter.sendMail(mailOptions, function (error, info) {
+    transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log(error);
-        return res.status(500).send({ msg: "Email error" });
+        console.error("Email error:", error);
+        return res.status(500).send({ msg: "❌ Email failed" });
       } else {
-        console.log("Email sent: " + info.response);
-        return res.send({ msg: "User created and email sent" });
+        console.log("📧 Email sent:", info.response);
+        return res.status(200).send({ msg: "✅ User created and email sent" });
       }
     });
 
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({ msg: "User creation failed" });
+    console.error("User registration error:", error);
+    return res.status(500).send({ msg: "❌ User creation failed" });
   }
 };
 
@@ -82,8 +86,8 @@ const showData = async (req, res) => {
     const users = await userModel.find();
     return res.status(200).send(users);
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({ msg: "Could not fetch users" });
+    console.error("Fetch users error:", error);
+    return res.status(500).send({ msg: "❌ Could not fetch users" });
   }
 };
 
@@ -92,18 +96,11 @@ const assigntask = async (req, res) => {
   const { title, description, compday, userid } = req.body;
 
   try {
-    await taskModal.create({
-      title,
-      description,
-      compday,
-      userid,
-    });
-
-    return res.status(201).send("Task assigned successfully");
-
+    await taskModal.create({ title, description, compday, userid });
+    return res.status(201).send("✅ Task assigned successfully");
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({ msg: "Task assignment failed" });
+    console.error("Assign task error:", error);
+    return res.status(500).send({ msg: "❌ Task assignment failed" });
   }
 };
 
@@ -113,8 +110,8 @@ const detailTask = async (req, res) => {
     const tasks = await taskModal.find().populate("userid");
     return res.status(200).send(tasks);
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({ msg: "Could not load tasks" });
+    console.error("Fetch task details error:", error);
+    return res.status(500).send({ msg: "❌ Could not load tasks" });
   }
 };
 
@@ -123,14 +120,11 @@ const changeTaskStatus = async (req, res) => {
   const { id } = req.query;
 
   try {
-    await taskModal.findByIdAndUpdate(id, {
-      taskstatus: false,
-    });
-    return res.status(200).send("Task status updated successfully");
-
+    await taskModal.findByIdAndUpdate(id, { taskstatus: false });
+    return res.status(200).send("✅ Task status updated");
   } catch (error) {
-    console.log(error);
-    return res.status(500).send({ msg: "Status update failed" });
+    console.error("Update task status error:", error);
+    return res.status(500).send({ msg: "❌ Status update failed" });
   }
 };
 
@@ -139,20 +133,15 @@ const taskDelete = async (req, res) => {
   const { id } = req.query;
 
   try {
-    const deletedTask = await taskModal.findByIdAndDelete(id);
-
-    if (!deletedTask) {
-      return res.status(404).json({ msg: "Task not found" });
+    const deleted = await taskModal.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ msg: "❌ Task not found" });
     }
 
-    return res.status(200).json({
-      msg: "Task deleted successfully",
-      deletedTask,
-    });
-
+    return res.status(200).json({ msg: "✅ Task deleted", deleted });
   } catch (error) {
-    console.error("Error deleting task:", error);
-    return res.status(500).json({ msg: "Server error" });
+    console.error("Delete task error:", error);
+    return res.status(500).json({ msg: "❌ Server error" });
   }
 };
 
